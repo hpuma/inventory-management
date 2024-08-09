@@ -8,6 +8,7 @@ import {
   Button,
   Modal,
   TextField,
+  ButtonGroup,
 } from "@mui/material";
 import { firestore } from "@/firebase";
 import {
@@ -39,6 +40,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
+  const [itemSearch, setItemSearch] = useState("");
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
     const docs = await getDocs(snapshot);
@@ -48,9 +50,14 @@ export default function Home() {
     });
     setInventory(inventoryList);
   };
-  const addItem = async (item) => {
+  const getDocData = async (item) => {
     const docRef = doc(collection(firestore, "inventory"), item);
     const docSnap = await getDoc(docRef);
+    return { docRef, docSnap };
+  };
+
+  const addItem = async (item) => {
+    const { docRef, docSnap } = await getDocData(item);
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
       await setDoc(docRef, { quantity: quantity + 1 });
@@ -61,8 +68,7 @@ export default function Home() {
   };
 
   const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, "inventory"), item);
-    const docSnap = await getDoc(docRef);
+    const { docRef, docSnap } = await getDocData(item);
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
       if (quantity === 1) {
@@ -83,7 +89,7 @@ export default function Home() {
     <Box
       width="100vw"
       height="100vh"
-      display={"flex"}
+      display="flex"
       justifyContent={"center"}
       flexDirection={"column"}
       alignItems={"center"}
@@ -99,7 +105,7 @@ export default function Home() {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Add Item
           </Typography>
-          <Stack width="100%" direction={"row"} spacing={2}>
+          <Stack width="100%" direction={"row"} spacing={4}>
             <TextField
               id="outlined-basic"
               label="Item"
@@ -121,12 +127,20 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
-      <Button variant="contained" onClick={handleOpen}>
-        Add New Item
-      </Button>
+      <Box
+        width="800px"
+        height="50px"
+        display={"flex"}
+        justifyContent={"space-between"}
+        alignItems={"center"}
+      >
+        <Button variant="contained" onClick={handleOpen}>
+          Add New Item
+        </Button>
+      </Box>
       <Box border={"1px solid #333"}>
         <Box
-          width="800px"
+          width="100%"
           height="100px"
           bgcolor={"#ADD8E6"}
           display={"flex"}
@@ -137,27 +151,40 @@ export default function Home() {
             Inventory Items
           </Typography>
         </Box>
-        <Stack width="800px" height="300px" spacing={2} overflow={"auto"}>
+        <Stack width="100%" height="100%" spacing={1} overflow={"auto"}>
           {inventory.map(({ name, quantity }) => (
             <Box
               key={name}
-              width="100%"
-              minHeight="150px"
+              width="800px"
+              minHeight="100px"
               display={"flex"}
               justifyContent={"space-between"}
               alignItems={"center"}
               bgcolor={"#f0f0f0"}
-              paddingX={5}
+              paddingX={2}
             >
-              <Typography variant={"h3"} color={"#333"} textAlign={"center"}>
-                {name.charAt(0).toUpperCase() + name.slice(1)}
+              <Typography variant={"h5"} color={"#333"} textAlign={"center"}>
+                <b>Name:</b> {name.charAt(0).toUpperCase() + name.slice(1)}
               </Typography>
-              <Typography variant={"h3"} color={"#333"} textAlign={"center"}>
-                Quantity: {quantity}
+              <Typography variant={"h5"} color={"#333"} textAlign={"center"}>
+                <b>Quantity:</b> {quantity}
               </Typography>
-              <Button variant="contained" onClick={() => removeItem(name)}>
-                Remove
-              </Button>
+              <ButtonGroup variant="contained" aria-label="Basic button group">
+                <Button
+                  onClick={() => {
+                    removeItem(name);
+                  }}
+                >
+                  -
+                </Button>
+                <Button
+                  onClick={() => {
+                    addItem(name);
+                  }}
+                >
+                  +
+                </Button>
+              </ButtonGroup>
             </Box>
           ))}
         </Stack>
